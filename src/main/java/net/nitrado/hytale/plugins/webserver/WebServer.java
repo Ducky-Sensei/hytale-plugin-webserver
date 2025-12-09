@@ -1,6 +1,7 @@
 package net.nitrado.hytale.plugins.webserver;
 
 import com.hypixel.hytale.server.core.HytaleServer;
+import com.hypixel.hytale.server.core.command.CommandManager;
 import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
@@ -9,6 +10,13 @@ import com.hypixel.hytale.server.core.util.Config;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import net.nitrado.hytale.plugins.webserver.auth.AuthProvider;
+import net.nitrado.hytale.plugins.webserver.auth.BasicAuthProvider;
+import net.nitrado.hytale.plugins.webserver.auth.store.CombinedCredentialValidator;
+import net.nitrado.hytale.plugins.webserver.auth.store.CredentialValidator;
+import net.nitrado.hytale.plugins.webserver.auth.store.JsonPasswordStore;
+import net.nitrado.hytale.plugins.webserver.auth.store.UserCredentialStore;
+import net.nitrado.hytale.plugins.webserver.commands.WebServerCommand;
 import net.nitrado.hytale.plugins.webserver.config.WebServerConfig;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -18,6 +26,7 @@ import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -33,6 +42,12 @@ public class WebServer extends JavaPlugin {
     private final ContextHandlerCollection contexts;
     private Server server;
 
+    private CredentialValidator userCredentialValidator;
+    private CredentialValidator serviceAccountCredentialValidator;
+
+    private UserCredentialStore userCredentialStore;
+    private UserCredentialStore serviceAccountCredentialStore;
+
     @Override
     protected void setup() {
         var l = getLogger();
@@ -44,10 +59,41 @@ public class WebServer extends JavaPlugin {
         this.server.setHandler(this.contexts);
 
         try {
+            this.setupAuthStores();
+        } catch (IOException e) {
+            l.at(Level.SEVERE).log("failed to setup stores for webserver credentials: %s", e.getMessage());
+            return;
+        }
+
+        this.setupCommands();
+
+        try {
             this.server.start();
         } catch (Exception e) {
             l.at(Level.SEVERE).log(e.getMessage());
         }
+    }
+
+    protected void setupCommands() {
+        CommandManager.get().register(new WebServerCommand(this));
+    }
+
+    protected void setupAuthStores() throws IOException {
+        // TODO: Make implementation configurable somehow?
+
+        var dataDir = getDataDirectory();
+
+        var serviceAccountStore = new JsonPasswordStore(dataDir.resolve("serviceaccounts.json"), getLogger().getSubLogger("ServiceAccountCredentialStore"));
+        serviceAccountStore.load();
+
+        var userStore = new JsonPasswordStore(dataDir.resolve("users.json"), getLogger().getSubLogger("UserCredentialStore"));
+        userStore.load();
+
+        this.serviceAccountCredentialStore = serviceAccountStore;
+        this.serviceAccountCredentialValidator = serviceAccountStore;
+
+        this.userCredentialStore = userStore;
+        this.userCredentialValidator = userStore;
     }
 
     @Override
@@ -92,5 +138,23 @@ public class WebServer extends JavaPlugin {
         for (var o : beans) {
             this.server.addBean(o);
         }
+    }
+
+    public UserCredentialStore getUserCredentialStore() {
+        return this.userCredentialStore;
+    }
+
+    public UserCredentialStore getServiceAccountCredentialStore() {
+        return this.serviceAccountCredentialStore;
+    }
+
+    public AuthProvider[] getDefaultAuthProviders() {
+        var combined = new CombinedCredentialValidator();
+        combined.add(this.userCredentialValidator);
+        combined.add(this.serviceAccountCredentialValidator);
+
+        return new AuthProvider[]{
+            new BasicAuthProvider(combined),
+        };
     }
 }
