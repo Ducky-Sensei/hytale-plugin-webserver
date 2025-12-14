@@ -12,17 +12,26 @@ import net.nitrado.hytale.plugins.webserver.auth.store.CombinedCredentialValidat
 import net.nitrado.hytale.plugins.webserver.auth.store.CredentialValidator;
 import net.nitrado.hytale.plugins.webserver.auth.store.JsonPasswordStore;
 import net.nitrado.hytale.plugins.webserver.auth.store.UserCredentialStore;
+import net.nitrado.hytale.plugins.webserver.cert.CertificateProvider;
 import net.nitrado.hytale.plugins.webserver.commands.WebServerCommand;
+import net.nitrado.hytale.plugins.webserver.config.TlsConfig;
 import net.nitrado.hytale.plugins.webserver.config.WebServerConfig;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 import javax.annotation.Nonnull;
+import javax.net.ssl.SSLContext;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.file.Path;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -47,11 +56,46 @@ public class WebServer extends JavaPlugin {
     @Override
     protected void setup() {
         var l = getLogger();
-        var addr = new InetSocketAddress(config.get().getBindHost(), config.get().getBindPort());
+        var cfg = config.get();
+        var addr = new InetSocketAddress(cfg.getBindHost(), cfg.getBindPort());
+        var tlsConfig = cfg.getTls();
 
         l.at(Level.INFO).log("Binding WebServer to " + addr);
 
-        this.server = new Server(addr);
+        this.server = new Server();
+
+        ServerConnector connector;
+        if (tlsConfig.isInsecure()) {
+            l.at(Level.WARNING).log("TLS is disabled - using insecure plain HTTP!");
+            connector = new ServerConnector(this.server);
+        } else {
+            SSLContext sslContext;
+            try {
+                sslContext = this.createSSLContext(tlsConfig);
+            } catch (Exception e) {
+                l.at(Level.SEVERE).log("Failed to create SSL context: " + e.getMessage());
+                throw new RuntimeException(e);
+            }
+
+            SslContextFactory.Server ssl = new SslContextFactory.Server();
+            ssl.setSslContext(sslContext);
+            ssl.setSniRequired(false);
+
+            HttpConfiguration httpsConfig = new HttpConfiguration();
+            SecureRequestCustomizer secureRequestCustomizer = new SecureRequestCustomizer();
+            secureRequestCustomizer.setSniRequired(false);
+            secureRequestCustomizer.setSniHostCheck(false);
+            httpsConfig.addCustomizer(secureRequestCustomizer);
+
+            connector = new ServerConnector(this.server,
+                    new SslConnectionFactory(ssl, HttpVersion.HTTP_1_1.asString()),
+                    new HttpConnectionFactory(httpsConfig));
+        }
+
+        connector.setHost(addr.getHostName());
+        connector.setPort(addr.getPort());
+
+        this.server.addConnector(connector);
         this.server.setHandler(this.contexts);
 
         try {
@@ -68,6 +112,17 @@ public class WebServer extends JavaPlugin {
         } catch (Exception e) {
             l.at(Level.SEVERE).log(e.getMessage());
         }
+    }
+
+    protected SSLContext createSSLContext(TlsConfig tlsConfig) throws Exception {
+        var l = getLogger();
+        CertificateProvider provider = tlsConfig.createCertificateProvider(
+                config.get().getBindHost(),
+                getDataDirectory(),
+                msg -> l.at(Level.INFO).log(msg)
+        );
+        l.at(Level.INFO).log("Using certificate provider: " + tlsConfig.getCertificateProvider());
+        return provider.createSSLContext();
     }
 
     protected void setupAnonymousUser() {

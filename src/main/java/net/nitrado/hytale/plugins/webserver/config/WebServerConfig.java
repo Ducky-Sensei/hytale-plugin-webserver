@@ -17,10 +17,16 @@ public class WebServerConfig {
                     (config, value) -> config.bindPort = value,
                     config -> config.bindPort
             ).add()
+            .append(
+                    new KeyedCodec<>("Tls", TlsConfig.CODEC),
+                    (config, value) -> config.tls = value,
+                    config -> config.tls
+            ).add()
             .build();
 
     private String bindHost = Options.getOptionSet().valueOf(Options.BIND).getHostName();
     private int bindPort = Options.getOptionSet().valueOf(Options.BIND).getPort() + 3;
+    private TlsConfig tls = new TlsConfig();
 
     public String getBindHost() {
         return bindHost;
@@ -30,4 +36,7 @@ public class WebServerConfig {
         return bindPort;
     }
 
+    public TlsConfig getTls() {
+        return tls;
+    }
 }
