@@ -6,6 +6,7 @@ import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandUtil;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
+import net.nitrado.hytale.plugins.webserver.Permissions;
 import net.nitrado.hytale.plugins.webserver.auth.store.UserCredentialStore;
 
 import javax.annotation.Nonnull;
@@ -31,7 +32,7 @@ public class UserPasswordSetCommand extends AbstractCommand {
     protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
         final var password = passwordArg.get(context);
 
-        CommandUtil.requirePermission(context.sender(), "nitrado.webserver.userpassword.set");
+        CommandUtil.requirePermission(context.sender(), Permissions.USERPASSWORD_SET);
 
         try {
             userCredentialStore.setUserCredential(context.sender().getUuid(), context.sender().getDisplayName(), password);

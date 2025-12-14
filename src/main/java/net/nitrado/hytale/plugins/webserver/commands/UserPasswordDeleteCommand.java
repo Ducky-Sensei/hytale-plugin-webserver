@@ -4,6 +4,7 @@ import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.AbstractCommand;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandUtil;
+import net.nitrado.hytale.plugins.webserver.Permissions;
 import net.nitrado.hytale.plugins.webserver.auth.store.UserCredentialStore;
 
 import javax.annotation.Nonnull;
@@ -26,7 +27,7 @@ public class UserPasswordDeleteCommand extends AbstractCommand {
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-        CommandUtil.requirePermission(context.sender(), "nitrado.webserver.userpassword.delete");
+        CommandUtil.requirePermission(context.sender(), Permissions.USERPASSWORD_DELETE);
 
         try {
             userCredentialStore.deleteUserCredential(context.sender().getUuid());

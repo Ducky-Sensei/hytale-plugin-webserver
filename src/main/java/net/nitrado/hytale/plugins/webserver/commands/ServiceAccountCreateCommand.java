@@ -6,6 +6,7 @@ import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandUtil;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
+import net.nitrado.hytale.plugins.webserver.Permissions;
 import net.nitrado.hytale.plugins.webserver.WebServer;
 import net.nitrado.hytale.plugins.webserver.auth.store.UserCredentialStore;
 
@@ -34,7 +35,7 @@ public class ServiceAccountCreateCommand extends AbstractCommand {
         final var name = nameArg.get(context);
         final var password = passwordArg.get(context);
 
-        CommandUtil.requirePermission(context.sender(), "nitrado.webserver.serviceaccount.write");
+        CommandUtil.requirePermission(context.sender(), Permissions.SERVICEACCOUNT_CREATE);
 
         try {
             var uuid = this.plugin.createServiceAccount(name, password);

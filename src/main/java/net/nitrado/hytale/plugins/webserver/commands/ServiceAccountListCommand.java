@@ -6,6 +6,7 @@ import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.CommandUtil;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
+import net.nitrado.hytale.plugins.webserver.Permissions;
 import net.nitrado.hytale.plugins.webserver.WebServer;
 
 import javax.annotation.Nonnull;
@@ -29,7 +30,7 @@ public class ServiceAccountListCommand extends AbstractCommand {
     @Nullable
     @Override
     protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
-        CommandUtil.requirePermission(context.sender(), "nitrado.webserver.serviceaccount.read");
+        CommandUtil.requirePermission(context.sender(), Permissions.SERVICEACCOUNT_LIST);
 
         var store = this.plugin.getServiceAccountCredentialStore();
         var list = store.listUsers();
