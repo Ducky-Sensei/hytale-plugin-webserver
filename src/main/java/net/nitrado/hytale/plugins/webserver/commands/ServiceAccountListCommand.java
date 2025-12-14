@@ -1,0 +1,47 @@
+package net.nitrado.hytale.plugins.webserver.commands;
+
+import com.hypixel.hytale.server.core.Message;
+import com.hypixel.hytale.server.core.command.system.AbstractCommand;
+import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.command.system.CommandUtil;
+import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
+import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
+import net.nitrado.hytale.plugins.webserver.WebServer;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import java.io.IOException;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+
+
+public class ServiceAccountListCommand extends AbstractCommand {
+
+    private final WebServer plugin;
+
+    public ServiceAccountListCommand(WebServer plugin) {
+        super("list", "List service accounts");
+
+        this.plugin = plugin;
+
+    }
+
+    @Nullable
+    @Override
+    protected CompletableFuture<Void> execute(@Nonnull CommandContext context) {
+        CommandUtil.requirePermission(context.sender(), "nitrado.webserver.serviceaccount.read");
+
+        var store = this.plugin.getServiceAccountCredentialStore();
+        var list = store.listUsers();
+
+        if  (list.isEmpty()) {
+            context.sendMessage(Message.raw("No Service Accounts found."));
+        }
+
+        for (UUID uuid : list) {
+            context.sendMessage(Message.raw(String.format("%s: %s", store.getNameByUUID(uuid), uuid.toString())));
+        }
+
+        return CompletableFuture.completedFuture(null);
+    }
+}

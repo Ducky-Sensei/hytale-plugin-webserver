@@ -1,9 +1,7 @@
 package net.nitrado.hytale.plugins.webserver.commands;
 
-import com.hypixel.hytale.server.core.command.newcmdsystem.commandtypes.CommandCollectionBase;
+import com.hypixel.hytale.server.core.command.system.basecommands.CommandCollectionBase;
 import net.nitrado.hytale.plugins.webserver.auth.store.UserCredentialStore;
-
-import javax.annotation.Nonnull;
 
 public class UserPasswordCommand extends CommandCollectionBase {
 

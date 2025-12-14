@@ -1,7 +1,9 @@
 package net.nitrado.hytale.plugins.webserver;
 
-import com.hypixel.hytale.server.core.command.CommandManager;
+import com.hypixel.hytale.server.core.command.system.CommandManager;
 import com.hypixel.hytale.server.core.permissions.PermissionsModule;
+import com.hypixel.hytale.server.core.permissions.provider.HytalePermissionsProvider;
+import com.hypixel.hytale.server.core.permissions.provider.PermissionProvider;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.plugin.PluginBase;
@@ -223,5 +225,67 @@ public class WebServer extends JavaPlugin {
         return new AuthProvider[]{
             new BasicAuthProvider(combined),
         };
+    }
+
+    public UUID createServiceAccount(String name, String password) throws IOException {
+        UUID uuid = UUID.randomUUID();
+
+        if (!name.startsWith("serviceaccount.")) {
+            name = "serviceaccount." + name;
+        }
+
+        try {
+            this.serviceAccountCredentialStore.setUserCredential(uuid, name, password);
+            PermissionsModule.get().addUserToGroup(uuid, "SERVICE_ACCOUNT");
+            return uuid;
+
+        } catch (IOException e) {
+            getLogger().at(Level.SEVERE).log("failed to create service account credentials: %s", e.getMessage());
+            throw e;
+        }
+    }
+
+    public void setServiceAccountPassword(String name, String password) throws IOException {
+        var uuid = this.serviceAccountCredentialStore.getUUIDByName(name);
+        if (uuid == null) {
+            throw new IOException("no UUID found for service account: " + name);
+        }
+
+        this.serviceAccountCredentialStore.setUserCredential(uuid, password);
+    }
+
+    public void setServiceAccountPassword(UUID uuid, String password) throws IOException {
+        this.serviceAccountCredentialStore.setUserCredential(uuid, password);
+    }
+
+    public void deleteServiceAccount(UUID uuid) throws IOException {
+        try {
+            this.serviceAccountCredentialStore.deleteUserCredential(uuid);
+            var perm = PermissionsModule.get();
+
+            for (PermissionProvider provider : perm.getProviders()) {
+                var groups = provider.getGroupsForUser(uuid);
+
+                for (var group : groups) {
+                    provider.removeUserFromGroup(uuid, group);
+                }
+
+                var permissions = provider.getUserPermissions(uuid);
+                provider.removeUserPermissions(uuid, permissions);
+            }
+
+        } catch (IOException e) {
+            getLogger().at(Level.SEVERE).log("failed to delete service account: %s", e.getMessage());
+            throw e;
+        }
+    }
+
+    public void deleteServiceAccount(String name) throws IOException {
+        var uuid = this.serviceAccountCredentialStore.getUUIDByName(name);
+        if (uuid == null) {
+            return;
+        }
+
+        this.deleteServiceAccount(uuid);
     }
 }

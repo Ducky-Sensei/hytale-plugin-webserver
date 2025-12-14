@@ -1,6 +1,7 @@
 package net.nitrado.hytale.plugins.webserver.auth.store;
 
 import java.io.IOException;
+import java.util.Set;
 import java.util.UUID;
 
 public interface UserCredentialStore {
@@ -10,4 +11,8 @@ public interface UserCredentialStore {
     }
     void deleteUserCredential(String username) throws IOException;
     void deleteUserCredential(UUID uuid) throws IOException;
+    UUID getUUIDByName(String name);
+    String getNameByUUID(UUID uuid);
+
+    Set<UUID> listUsers();
 }

@@ -1,11 +1,9 @@
 package net.nitrado.hytale.plugins.webserver.commands;
 
 import com.hypixel.hytale.server.core.Message;
-import com.hypixel.hytale.server.core.command.CommandUtil;
-import com.hypixel.hytale.server.core.command.newcmdsystem.AbstractCommand;
-import com.hypixel.hytale.server.core.command.newcmdsystem.CommandContext;
-import com.hypixel.hytale.server.core.command.newcmdsystem.argument.RequiredArg;
-import com.hypixel.hytale.server.core.command.newcmdsystem.values.premade.ArgTypes;
+import com.hypixel.hytale.server.core.command.system.AbstractCommand;
+import com.hypixel.hytale.server.core.command.system.CommandContext;
+import com.hypixel.hytale.server.core.command.system.CommandUtil;
 import net.nitrado.hytale.plugins.webserver.auth.store.UserCredentialStore;
 
 import javax.annotation.Nonnull;

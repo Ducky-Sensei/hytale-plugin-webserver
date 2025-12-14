@@ -175,7 +175,37 @@ The `username` may be the user's UUID, or their display name at time of creation
 [[ TODO ]]
 
 #### Service Accounts
-[[ TODO ]]
+A player with the `nitrado.webserver.serviceaccount.create` permission can execute the following command in-game
+
+```
+/webserver serviceaccount create MyServiceAccountName MyPassword
+```
+
+You can then use that password to authenticate against the web server using Basic Auth, such as with:
+
+```
+curl -u serviceaccount.MyServiceAccountName:MyPassword <url>
+```
+
+Note the `serviceaccount.` prefix when authenticating with a service account.
+
+Service accounts will be automatically added to the `SERVICE_ACCOUNT` group to make them easier to identify in
+permission management.
+
+To list the already created service accounts with their names and UUIDs, use 
+
+```
+/webserver serviceaccount list
+```
+
+And for deletion:
+
+```
+/webserver serviceaccount delete NameOrUUID
+```
+
+Deleting a service account will automatically remove it from any groups and permissions, to not clutter your permission
+management.
 
 #### The Anonymous User
 This plugin automatically creates a permissions entry for a user with the UUID `00000000-0000-0000-0000-000000000000` in

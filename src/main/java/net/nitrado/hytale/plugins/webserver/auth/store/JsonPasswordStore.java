@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -142,12 +143,7 @@ public class JsonPasswordStore implements CredentialValidator, UserCredentialSto
     @Override
     public void deleteUserCredential(UUID uuid) throws IOException {
         var lastCredential = this.uuidToCredential.get(uuid);
-        String lastName = null;
-        for  (Map.Entry<String, UUID> entry : this.nameToUUID.entrySet()) {
-            if (entry.getValue().equals(uuid)) {
-                lastName = entry.getKey();
-            }
-        }
+        String lastName = this.getNameByUUID(uuid);
 
         if (lastName != null) {
             this.nameToUUID.remove(lastName);
@@ -162,6 +158,27 @@ public class JsonPasswordStore implements CredentialValidator, UserCredentialSto
 
             throw e;
         }
+    }
+
+    @Override
+    public UUID getUUIDByName(String name) {
+        return this.nameToUUID.get(name);
+    }
+
+    @Override
+    public String getNameByUUID(UUID uuid) {
+        for  (Map.Entry<String, UUID> entry : this.nameToUUID.entrySet()) {
+            if (entry.getValue().equals(uuid)) {
+                return entry.getKey();
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public Set<UUID> listUsers() {
+        return this.uuidToCredential.keySet();
     }
 
     protected void save() throws IOException {

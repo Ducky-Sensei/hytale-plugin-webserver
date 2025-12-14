@@ -1,6 +1,6 @@
 package net.nitrado.hytale.plugins.webserver.commands;
 
-import com.hypixel.hytale.server.core.command.newcmdsystem.commandtypes.CommandCollectionBase;
+import com.hypixel.hytale.server.core.command.system.basecommands.CommandCollectionBase;
 import net.nitrado.hytale.plugins.webserver.WebServer;
 
 import javax.annotation.Nonnull;
@@ -12,5 +12,6 @@ public class WebServerCommand extends CommandCollectionBase {
         addAliases("web");
 
         addSubCommand(new UserPasswordCommand(webServer.getUserCredentialStore()));
+        addSubCommand(new ServiceAccountCommand(webServer));
     }
 }
