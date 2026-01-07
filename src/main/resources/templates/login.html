@@ -1,96 +1,148 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html th:replace="~{layout :: layout(~{::title}, ~{::section}, ~{::script}, ~{::#additionalCss})}" lang="en">
 <head>
     <title>Login</title>
+
+    <link href="../static/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="../static/css/bootstrap-icons.min.css" rel="stylesheet"/>
+    <link id="additionalCss" href="../static/css/login.css" rel="stylesheet"/>
+
     <style>
         body {
-            background-color: black;
-            color: rgb(183, 206, 221);
-            font-family: "Nunito Sans Variable", sans-serif;
+            background-color: RGBA(var(--bs-dark-rgb),var(--bs-bg-opacity,1))!important
         }
-
-        h1, h2, h3 {
-            margin: 0 0 16px 0;
-            font-family: "Lexend Variable", sans-serif;
-            color: #0000;
-            background: linear-gradient(#f5fbff,#bfe6ff);
-            background-clip: text;
-            text-transform: uppercase;
-            text-align: center;
-        }
-
-        .layout {
-            display: flex;
-            align-items: center;
-            flex-direction: column;
-        }
-
-        .login {
-            background-color: rgb(18, 27, 37);
-            border-radius: 16px;
-            margin-block: 56px;
-            padding-block-end: 32px;
-            padding-block-start: 40px;
-            padding: 40px 56px 32px 56px;
-        }
-
-        .login form {
-            display: flex;
-            flex-direction: column;
-            row-gap: 12px;
-        }
-
-        input {
-            background-color: rgba(0,0,0,0.5);
-            border: none;
-            padding-block: 14px;
-            padding: 14px 12px;
-            border-radius: 6px;
-            padding-inline: 12px;
-            color: white;
-        }
-
-        label {
-            font-size: 19.2px;
-            line-height: 28.8px;
-        }
-
-        button {
-            background-color: oklab(0.129 -0.0038832 -0.0418201 / 0.2);
-            border-width: 2px;
-            border-style: solid;
-            border-radius: 6px;
-            border-color: oklab(0 0 0 / 0.1);
-            font-size: 16px;
-            color: white;
-            padding: 16px;
-            cursor: pointer;
-        }
-
     </style>
 </head>
-<body>
-    <div class="layout">
-        <div class="login">
-            <div th:if="${UUID}">
-                <h1>Logged In</h1>
-                <p th:text="${UUID}"></p>
-                <form action="/logout" method="post">
-                    <button type="submit">Logout</button>
+<body >
+    <section id="login" data-bs-theme="dark" class="d-flex flex-column">
+        <div th:if="${ERROR}" th:text="${ERROR}" class="alert alert-danger align-self-center"></div>
+        <div th:unless="${ERROR}" th:text="${ERROR}" class="mt-5"></div>
+        <div id="cardLogin" class="card flex-grow-0 bg-body-tertiary border-0 p-3 align-self-center" style="max-width:400px;">
+            <div id="cardLoginSelection" class="card-body">
+                <h5 class="card-title">Login</h5>
+                <div class="d-flex flex-column align-items-stretch">
+                    <hr>
+                    <a id="loginPasswordBtn" href="#" class="btn btn-lg btn-primary text-secondary">
+                        With Player Password  <span class="bi bi-chevron-right ms-3"></span>
+                    </a>
+                    <small class="text-body-tertiary">
+                        Use a previously created player password.
+                    </small>
+                    <a id="loginCodeBtn" href="#" class="btn btn-lg btn-secondary text-secondary mt-4">
+                        With Login Code  <span class="bi bi-chevron-right ms-3"></span>
+                    </a>
+                    <small class="text-body-tertiary">
+                        Use a one-time code that can be created with an in-game command.
+                    </small>
+                    <hr>
+                    <span class="text-center mt-2">OR</span>
+                    <hr>
+                    <a id="loginPasswordCreateBtn" href="#" class="btn btn-lg btn-secondary text-secondary">
+                        Create Player Password  <span class="bi bi-chevron-right ms-3"></span>
+                    </a>
+                    <small class="text-body-tertiary">
+                        Set up a password that can be used for future logins.
+                    </small>
+                    <hr>
+                </div>
+            </div>
+
+            <div id="cardLoginCode" class="card-body d-none">
+                <a id="loginCodeClose" href="#" class="text-secondary position-absolute top-0 end-0 p-1 fs-3">
+                    <span class="bi bi-x me-1"></span>
+                </a>
+                <h5 class="card-title mt-3 mb-3">
+                    Login With Login Code
+                </h5>
+                <form method="POST">
+                    <input type="hidden" name="method" value="code">
+                    <div class="alert alert-dark mb-4">
+                        <p>While connected to the Hytale game server, execute the command</p>
+                        <p class="text-body-secondary ps-3">/webserver code create</p>
+                        <p>to retrieve a Login Code.</p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="loginCodeInput" class="form-label">Login Code</label>
+                        <input type="text" required autocomplete="off" autocapitalize="characters" class="form-control bg-body-secondary text-white" id="loginCodeInput" name="loginCode">
+                    </div>
+                    <div class="d-flex align-content-stretc mt-3h">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            Login
+                        </button>
+                    </div>
                 </form>
             </div>
-            <div th:unless="${UUID}">
-                <h1>Login</h1>
+
+            <div id="cardLoginPassword" class="card-body d-none">
+                <a id="loginPasswordClose" href="#" class="text-secondary position-absolute top-0 end-0 p-1 fs-3">
+                    <span class="bi bi-x me-1"></span>
+                </a>
+                <h5 class="card-title mt-3 mb-3">
+                    Login With Player Password
+                </h5>
                 <form method="POST">
-                    <label for="input-user">Username</label>
-                    <input id="input-user" type="text" name="username" placeholder="Username" required>
-                    <label for="input-password">Password</label>
-                    <input id="input-password" type="password" name="password" placeholder="Password" required>
-                    <input type="hidden" name="CSRF" th:value="${CSRF_TOKEN}"/>
-                    <button type="submit">Login</button>
+                    <input type="hidden" name="method" value="password">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input id="username" name="username" type="text" required class="form-control bg-body-secondary text-white" aria-describedby="usernameHelpBlock">
+                        <div id="usernameHelpBlock" class="form-text">
+                            You may use your display name or UUID.
+                        </div>
+
+                        <label for="password" class="form-label mt-2">Password</label>
+                        <input id="password" name="password" type="password" required class="form-control bg-body-secondary text-white">
+                        <div class="alert alert-info mt-3">
+                            The required password is unique to this server. Do not use your Hytale account password here.
+                        </div>
+                    </div>
+                    <div class="d-flex align-content-stretc mt-3h">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            Login
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="cardLoginPasswordCreate" class="card-body d-none">
+                <a id="loginPasswordCreateClose" href="#" class="text-secondary position-absolute top-0 end-0 p-1 fs-3">
+                    <span class="bi bi-x me-1"></span>
+                </a>
+                <h5 class="card-title mt-3 mb-3">
+                    Create Player Password
+                </h5>
+                <form method="POST">
+                    <input type="hidden" name="method" value="passwordCreate">
+                    <div class="alert alert-dark mb-4">
+                        <p>While connected to the Hytale game server, execute the command</p>
+                        <p class="text-body-secondary ps-3">/webserver code create</p>
+                        <p>to retrieve a Login Code.</p>
+                    </div>
+                    <div class="mb-3">
+                        <label  for="passwordCreateLoginCode" class="form-label">Login Code</label>
+                        <input id="passwordCreateLoginCode" name="loginCode" type="text" minlength="9" maxlength="9" required class="form-control bg-body-secondary text-white" autocomplete="off">
+
+                        <label for="passwordCreatePassword" class="form-label mt-2">Password</label>
+                        <input id="passwordCreatePassword" name="password" type="password" required class="form-control bg-body-secondary text-white">
+
+                        <label for="passwordCreatePasswordRepeated" class="form-label mt-2" aria-describedby="passwordMismatch">Password (Repeated)</label>
+                        <input id="passwordCreatePasswordRepeated" name="passwordRepeated" required type="password" class="form-control bg-body-secondary text-white">
+                        <div id="passwordMismatch" class="invalid-feedback">
+                            Passwords do not match.
+                        </div>
+
+                        <div class="alert alert-info mt-3">
+                            Admins of this Hytale server may gain access to the password you assign. Do not use your
+                            Hytale account password here.
+                        </div>
+                    </div>
+                    <div class="d-flex align-content-stretc mt-3h">
+                        <button type="submit" class="btn btn-primary flex-grow-1" disabled>
+                            Login
+                        </button>
+                    </div>
                 </form>
             </div>
         </div>
-    </div>
+    </section>
+    <script src="../static/js/login.js" th:src="@{/static/js/login.js}" type="text/javascript"></script>
 </body>
 </html>

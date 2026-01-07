@@ -1,0 +1,7 @@
+#login #cardLogin {
+    transition: opacity 400ms;
+}
+
+#login #cardLogin.hidden {
+    opacity: 0;
+}

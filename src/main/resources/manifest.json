@@ -12,7 +12,7 @@
   "Website": "https://www.nitrado.net",
   "Main": "net.nitrado.hytale.plugins.webserver.WebServerPlugin",
   "ServerVersion": "*",
-  "Dependencies": {
+  "OptionalDependencies": {
     "Hytale:PermissionsModule": "*"
   }
 }

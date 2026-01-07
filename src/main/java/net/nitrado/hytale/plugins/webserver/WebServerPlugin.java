@@ -5,20 +5,19 @@ import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import com.hypixel.hytale.server.core.permissions.provider.PermissionProvider;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
-import com.hypixel.hytale.server.core.plugin.PluginBase;
 import com.hypixel.hytale.server.core.util.Config;
-import net.nitrado.hytale.plugins.webserver.auth.AuthProvider;
-import net.nitrado.hytale.plugins.webserver.auth.BasicAuthProvider;
-import net.nitrado.hytale.plugins.webserver.auth.SessionAuthProvider;
-import net.nitrado.hytale.plugins.webserver.auth.store.CombinedCredentialValidator;
-import net.nitrado.hytale.plugins.webserver.auth.store.CredentialValidator;
-import net.nitrado.hytale.plugins.webserver.auth.store.JsonPasswordStore;
-import net.nitrado.hytale.plugins.webserver.auth.store.UserCredentialStore;
+import net.nitrado.hytale.plugins.webserver.authentication.AuthProvider;
+import net.nitrado.hytale.plugins.webserver.authentication.BasicAuthProvider;
+import net.nitrado.hytale.plugins.webserver.authentication.SessionAuthProvider;
+import net.nitrado.hytale.plugins.webserver.authentication.store.*;
 import net.nitrado.hytale.plugins.webserver.commands.WebServerCommand;
 import net.nitrado.hytale.plugins.webserver.config.WebServerConfig;
-import net.nitrado.hytale.plugins.webserver.login.LoginServlet;
-import net.nitrado.hytale.plugins.webserver.login.LogoutServlet;
+import net.nitrado.hytale.plugins.webserver.servlets.LoginServlet;
+import net.nitrado.hytale.plugins.webserver.servlets.LogoutServlet;
+import net.nitrado.hytale.plugins.webserver.servlets.StaticFileServlet;
+import net.nitrado.hytale.plugins.webserver.templates.TemplateEngineFactory;
 import org.bson.Document;
+import org.thymeleaf.TemplateEngine;
 
 import javax.annotation.Nonnull;
 import java.io.IOException;
@@ -41,6 +40,8 @@ public class WebServerPlugin extends JavaPlugin {
 
     private UserCredentialStore userCredentialStore;
     private UserCredentialStore serviceAccountCredentialStore;
+    private TemplateEngineFactory templateEngineFactory;
+    private LoginCodeStore loginCodeStore;
 
     private Path dataDir;
 
@@ -49,32 +50,31 @@ public class WebServerPlugin extends JavaPlugin {
         var l = getLogger();
         var cfg = config.get();
 
-        try {
-            this.dataDir = getDataDirectory();
-        } catch (IOException e) {
-            l.atSevere().withCause(e).log("Failed to get data directory");
-            throw new RuntimeException(e);
-        }
+        this.dataDir = getDataDirectory();
 
+        this.templateEngineFactory = new TemplateEngineFactory(this);
         this.webServer = new WebServer(l.getSubLogger("WebServer"), cfg, dataDir);
 
         try {
             this.setupAuthStores();
         } catch (IOException e) {
-            l.at(Level.SEVERE).log("failed to setup stores for webserver credentials: %s", e.getMessage());
+            l.at(Level.SEVERE).withCause(e).log("Failed to setup stores for webserver credentials");
             return;
         }
 
-        this.setupBuiltinRoutes();
-
-        this.setupCommands();
+        this.loginCodeStore = new LoginCodeStore();
 
         try {
-            this.webServer.start();
-        } catch (Exception e) {
-            l.at(Level.SEVERE).log(e.getMessage());
-            throw new RuntimeException(e);
+            this.setupBuiltinRoutes();
+        } catch (IOException e) {
+            l.at(Level.SEVERE).withCause(e).log("Failed to setup built-in routes");
+            return;
         }
+        this.webServer.setDefaultAuthProviders(this.getDefaultAuthProviders());
+
+        this.setupCommands();
+        this.webServer.addServlet(
+                new StaticFileServlet(this.dataDir.resolve("theme/static"), "static", WebServer.class.getClassLoader()), "/static/*");
     }
 
     @Override
@@ -84,7 +84,7 @@ public class WebServerPlugin extends JavaPlugin {
         try {
             this.importServiceAccounts(dataDir);
         } catch (IOException e) {
-            getLogger().atSevere().withCause(e).log("failed to import service accounts for webserver: %s", e.getMessage());
+            getLogger().atSevere().withCause(e).log("Failed to import service accounts for webserver: %s", e.getMessage());
         }
 
         try {
@@ -121,9 +121,17 @@ public class WebServerPlugin extends JavaPlugin {
         this.userCredentialValidator = userStore;
     }
 
-    public void setupBuiltinRoutes() {
-        // Add built-in routes directly to the main context
-        this.webServer.addServlet(new LoginServlet(getLogger().getSubLogger("LoginServlet"), this.userCredentialValidator), "/login");
+    public void setupBuiltinRoutes() throws IOException {
+        var defaultTemplateEngine = this.templateEngineFactory.getDefaultEngine();
+
+        this.webServer.addServlet(new LoginServlet(
+                getLogger().getSubLogger("LoginServlet"),
+                this.userCredentialStore,
+                this.userCredentialValidator,
+                this.loginCodeStore,
+                defaultTemplateEngine
+        ), "/login");
+
         this.webServer.addServlet(new LogoutServlet(getLogger().getSubLogger("LogoutServlet")), "/logout");
     }
 
@@ -132,21 +140,12 @@ public class WebServerPlugin extends JavaPlugin {
         this.webServer.stop();
     }
 
-    public HandlerBuilder createHandlerBuilder(PluginBase plugin) throws PrefixAlreadyRegisteredException{
-        var id = plugin.getIdentifier();
-        var prefix = String.format("/%s/%s", id.getGroup().toLowerCase(), id.getName().toLowerCase());
-
-        if (this.webServer.hasHandlerFor(prefix)) {
-            throw new PrefixAlreadyRegisteredException();
-        }
-
-        var result = new HandlerBuilder(this.getLogger().getSubLogger("WebServer"), this.webServer, prefix);
-
-        return result.withAuthProviders(this.getDefaultAuthProviders());
-    }
-
     public UserCredentialStore getUserCredentialStore() {
         return this.userCredentialStore;
+    }
+
+    public LoginCodeStore getLoginCodeStore() {
+        return this.loginCodeStore;
     }
 
     public UserCredentialStore getServiceAccountCredentialStore() {
@@ -291,5 +290,9 @@ public class WebServerPlugin extends JavaPlugin {
         }
 
         this.deleteServiceAccount(uuid);
+    }
+
+    public WebServer getWebServer() {
+        return webServer;
     }
 }

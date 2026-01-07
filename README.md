@@ -15,12 +15,9 @@ ensures compatibility with their respective hosting platform.
 
 ## Main Features
 
-**Please note:** This plugin is under active development. Not all features listed below are
-already supported, but will be supported until the Hytale release.
-
 - **Secure by default:** TLS using self-signed or user-provided certificates, as well as support for
   certificate retrieval.
-- **Player Authentication:** Users may authenticate based on their Hytale account, allowing plugins
+- **Player Authentication:** Players may authenticate based on their Hytale account, allowing plugins
   to act in the context of that respective player.
 - **Permission checks:** Built-in support for performing authorization checks based on an authenticated
   player's permissions on the Hytale server.
@@ -31,10 +28,10 @@ already supported, but will be supported until the Hytale release.
 
 ## Installation
 
-Copy the plugin JAR file into your server's `plugins/` folder.
+Copy the plugin JAR file into your server's `mods/` folder.
 
 By default, the web server binds to the game server's port +3. This can be overridden by creating
-a file under `plugins/Nitrado_WebServer/config.json`:
+a file under `mods/Nitrado_WebServer/config.json`:
 
 ```json
 {
@@ -83,46 +80,59 @@ Below is example code taken from [Nitrado:Query](https://github.com/nitrado/hyta
 
 ```java
 public class Query extends JavaPlugin {
-    @Override
-    protected void setup() {
-        this.registerHandlers();
+
+  private WebServerPlugin webServerPlugin;
+
+  public Query(@Nonnull JavaPluginInit init) {
+    super(init);
+  }
+
+  @Override
+  protected void setup() {
+    this.registerHandlers();
+  }
+
+  private void registerHandlers() {
+    var plugin = PluginManager.get().getPlugin(new PluginIdentifier("Nitrado", "WebServer"));
+
+    if (!(plugin instanceof WebServerPlugin webServer)) {
+      return;
     }
 
-    private void registerHandlers() {
-        var plugin = PluginManager.get().getPlugin(new PluginIdentifier("Nitrado", "WebServer"));
+    this.webServerPlugin = webServer;
 
-        if (!(plugin instanceof WebServerPlugin webServerPlugin)) {
-            return;
-        }
-
-        try {
-            webServerPlugin
-                    .createHandlerBuilder(this)
-                    .requireAnyPermissionOf(
-                            Permissions.VIEW_PLAYERS,
-                            Permissions.VIEW_SERVER,
-                            Permissions.VIEW_UNIVERSE
-                    )
-                    .addServlet(new QueryServlet(), "/")
-                    .register();
-        } catch (Exception e) {
-            getLogger().at(Level.SEVERE).log("Failed to register route: " + e.getMessage());
-        }
+    try {
+      webServerPlugin.getWebServer().addServlet(this, "", new QueryServlet());
+    } catch (Exception e) {
+      getLogger().at(Level.SEVERE).withCause(e).log("Failed to register route.");
     }
+  }
+
+  @Override
+  protected void shutdown() {
+    webServerPlugin.getWebServer().removeServlets(this);
+  }
 }
 ```
 
-The handler will be automatically registered at `/<plugin_group>/<plugin_name>/`, lowercased. So `/nitrado/query/` for
+The handler will be automatically registered at `/<PluginGroup>/<PluginName>`, so `/Nitrado/Query` for
 the example above. This approach avoids collisions between multiple plugins.
 
-The registered handler requires the requesting user to have at least one of three given permissions. If none of these
-permissions is fulfilled, the request is declined. The registered servlet can then still check for those permissions
-to adjust its output, such as:
+Also note that in the `shutdown()` method the plugin removes itself from the web server again. This ensures
+that you can reload your plugin at runtime.
+
+### Handling Permissions
+To check for permissions, the most convenient way is via annotations in the servlet.
+
+In the example below, the `doGet` handler requires the requesting user to have at least one of three given permissions.
+If none of these permissions is fulfilled, the request is declined. The registered servlet can then still check for
+those permissions to adjust its output:
 
 ```java
 public class QueryServlet extends HttpServlet {
 
     @Override
+    @RequirePermissions(value = {Permissions.READ_PLAYERS, Permissions.READ_SERVER, Permissions.READ_UNIVERSE}, mode = RequirePermissions.Mode.ANY)
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws IOException {
         resp.setContentType("application/json");
@@ -131,57 +141,52 @@ public class QueryServlet extends HttpServlet {
 
         var principal = req.getUserPrincipal();
         if (principal instanceof HytaleUserPrincipal user) {
-            if (user.hasPermission(Permissions.VIEW_SERVER)) {
+            if (user.hasPermission(Permissions.READ_SERVER)) {
                 this.addServerData(doc);
             }
 
-            if (user.hasPermission(Permissions.VIEW_PLAYERS)) {
+            if (user.hasPermission(Permissions.READ_PLAYERS)) {
                 this.addPlayerData(doc);
             }
 
-            if (user.hasPermission(Permissions.VIEW_UNIVERSE)) {
+            if (user.hasPermission(Permissions.READ_UNIVERSE)) {
                 this.addUniverseData(doc);
             }
         }
 
         resp.getWriter().println(doc.toJson(JsonWriterSettings.builder().indent(true).build()));
     }
-    
     // ...
 }
 ```
 
 ### Authentication
 
-#### User Password
-A player with the `nitrado.webserver.userpassword.set` permission can execute the following command in-game:
+#### Player Password
+A player with the `nitrado.webserver.command.logincode.create` permission can execute the following command in-game:
 
 ```
-/webserver userpassword set MyPassword
+/webserver code create
 ```
 
-They can then use that password to authenticate against the web server. The currently supported authentication method
-is Basic Auth, such as with
-
-```
-curl -u username:password <url>
-```
-
-The `username` may be the user's UUID, or their display name at time of creation of the password.
-
-[[ TODO: Form Login Flow / Session handling ]]
+This displays a short-lived code that can be used to log in via the web server. Users can also use this code to assign
+a long-lived password so that they can continue to log in even while not connected in-game.
 
 #### OAuth
-[[ TODO ]]
+OAuth support will be added if/when this functionality is officially supported by Hytale. 
 
 #### Service Accounts
-A player with the `nitrado.webserver.serviceaccount.create` permission can execute the following command in-game
+Service Accounts are intended for processes that automatically interact with the server through HTTP APIs. For
+security purposes, it is recommended to use service accounts that have the exact set of permissions to fulfill the
+tasks they are intended for.
 
-```
-/webserver serviceaccount create MyServiceAccountName MyPassword
-```
+Service accounts will be automatically added to the `SERVICE_ACCOUNT` group to make them easier to identify in
+permission management.
 
-You can then use that password to authenticate against the web server using Basic Auth, such as with:
+Service Accounts can be either created through the Web UI or provisioned automatically.
+
+##### Authenticating as a Service Account
+You can then use a Service Account password to authenticate against the web server using Basic Auth, such as with:
 
 ```
 curl -u serviceaccount.MyServiceAccountName:MyPassword <url>
@@ -189,23 +194,26 @@ curl -u serviceaccount.MyServiceAccountName:MyPassword <url>
 
 Note the `serviceaccount.` prefix when authenticating with a service account.
 
-Service accounts will be automatically added to the `SERVICE_ACCOUNT` group to make them easier to identify in
-permission management.
+#### Creation of Service Accounts through the Web UI
+[[ TODO ]]
 
-To list the already created service accounts with their names and UUIDs, use 
+##### Automatic Provisioning of Service Accounts
+Create the folder `plugins/Nitrado_WebServer/provisioning`. In it, you can place files that end in
+`.serviceaccount.json`, such as `example.serviceaccount.json` with the following content structure:
 
+```json
+{
+  "Enabled": true,
+  "Name": "serviceaccount.example",
+  "PasswordHash": "$2b$10$ME8G6/YZ3hXUOAhLs3mrh.a3cuZTvzE2zGjQIqxztgPXKtm7sFCde",
+  "Groups": ["Creative"],
+  "Permissions": ["nitrado.query.read.players"]
+}
 ```
-/webserver serviceaccount list
-```
 
-And for deletion:
-
-```
-/webserver serviceaccount delete NameOrUUID
-```
-
-Deleting a service account will automatically remove it from any groups and permissions, to not clutter your permission
-management.
+A service account with `Enabled` set to `true` will be automatically created or updated on server start. Setting
+`Enabled` to `false` will lead to the service account to be removed, also removing it from any groups and permissions,
+to not clutter your permission management.
 
 #### The Anonymous User
 This plugin automatically creates a permissions entry for a user with the UUID `00000000-0000-0000-0000-000000000000` in

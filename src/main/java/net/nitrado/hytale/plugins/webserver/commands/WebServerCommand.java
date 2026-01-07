@@ -9,7 +9,6 @@ public class WebServerCommand extends AbstractCommandCollection {
         super("webserver", "Manage webserver-related configuration, such as user credentials and service accounts");
         addAliases("web");
 
-        addSubCommand(new UserPasswordCommand(webServerPlugin.getUserCredentialStore()));
-        addSubCommand(new ServiceAccountCommand(webServerPlugin));
+        addSubCommand(new CodeCommand(webServerPlugin.getLoginCodeStore()));
     }
 }
