@@ -174,9 +174,19 @@ public class WebServer {
     /**
      * Adds a filter at the specified path.
      */
-    public void addFilter(Filter filter, String pathSpec) {
-        this.context.addFilter(new FilterHolder(filter), pathSpec, EnumSet.of(DispatcherType.REQUEST));
+    public void addFilter(PluginBase plugin, Filter filter, String pathSpec) throws IllegalPathSpecException {
+        if (!pathSpec.isEmpty() && !pathSpec.startsWith("/")) {
+            throw new IllegalPathSpecException();
+        }
+
+        var identifier = plugin.getIdentifier();
+        var prefix = String.format("/%s/%s", identifier.getGroup(), identifier.getName());
+        var fullPathSpec = prefix + pathSpec;
+
+        this.context.addFilter(new FilterHolder(filter), fullPathSpec, EnumSet.of(DispatcherType.REQUEST));
     }
+
+    //TODO void removeFilters(PluginBase plugin)
 
     protected void start() throws Exception {
         for (var connector : this.server.getConnectors()) {
