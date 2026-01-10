@@ -7,6 +7,7 @@ import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.hypixel.hytale.server.core.plugin.PluginBase;
 import com.hypixel.hytale.server.core.util.Config;
+import jakarta.servlet.Filter;
 import jakarta.servlet.http.HttpFilter;
 import jakarta.servlet.http.HttpServlet;
 import net.nitrado.hytale.plugins.webserver.authentication.AuthProvider;
@@ -270,7 +271,7 @@ public final class WebServerPlugin extends JavaPlugin {
      * @param filters  optional HTTP filters to apply to this path
      * @throws IllegalPathSpecException if the pathSpec is invalid (non-empty and doesn't start with "/")
      */
-    public void addServlet(@Nonnull PluginBase plugin, String pathSpec, HttpServlet servlet, HttpFilter ...filters) throws IllegalPathSpecException {
+    public void addServlet(@Nonnull PluginBase plugin, String pathSpec, HttpServlet servlet, Filter ...filters) throws IllegalPathSpecException {
         getWebServer().addServlet(plugin, pathSpec, servlet, filters, getDefaultAuthProviders());
     }
 

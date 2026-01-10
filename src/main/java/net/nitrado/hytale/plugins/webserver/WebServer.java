@@ -3,7 +3,7 @@ package net.nitrado.hytale.plugins.webserver;
 import com.hypixel.hytale.common.plugin.PluginIdentifier;
 import com.hypixel.hytale.logger.HytaleLogger;
 import com.hypixel.hytale.server.core.plugin.PluginBase;
-import jakarta.servlet.http.HttpFilter;
+import jakarta.servlet.Filter;
 import net.nitrado.hytale.plugins.webserver.authentication.internal.AuthFilter;
 import net.nitrado.hytale.plugins.webserver.authentication.AuthProvider;
 import net.nitrado.hytale.plugins.webserver.servlets.internal.AuthorizationWrapperServlet;
@@ -84,7 +84,7 @@ final class WebServer {
         pluginToAuthProviders.put(plugin.getIdentifier(), authProviders);
     }
 
-    void addServlet(PluginBase plugin, String pathSpec, HttpServlet servlet, HttpFilter[] filters, AuthProvider[] defaultAuthProviders) throws IllegalPathSpecException {
+    void addServlet(PluginBase plugin, String pathSpec, HttpServlet servlet, Filter[] filters, AuthProvider[] defaultAuthProviders) throws IllegalPathSpecException {
         if (!pathSpec.isEmpty() && !pathSpec.startsWith("/")) {
             throw new IllegalPathSpecException();
         }
