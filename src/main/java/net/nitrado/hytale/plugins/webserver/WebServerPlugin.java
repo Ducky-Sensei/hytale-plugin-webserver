@@ -1,5 +1,6 @@
 package net.nitrado.hytale.plugins.webserver;
 
+import com.hypixel.hytale.common.plugin.PluginIdentifier;
 import com.hypixel.hytale.server.core.command.system.CommandManager;
 import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import com.hypixel.hytale.server.core.permissions.provider.PermissionProvider;
@@ -146,14 +147,12 @@ public final class WebServerPlugin extends JavaPlugin {
     }
 
     void setupBuiltinRoutes() throws IOException {
-        var defaultTemplateEngine = this.templateEngineFactory.getDefaultEngine();
-
         this.webServer.addServlet(new LoginServlet(
+                this,
                 getLogger().getSubLogger("LoginServlet"),
                 this.userCredentialStore,
                 this.userCredentialValidator,
-                this.loginCodeStore,
-                defaultTemplateEngine
+                this.loginCodeStore
         ), "/login");
 
         this.webServer.addServlet(new LogoutServlet(getLogger().getSubLogger("LogoutServlet")), "/logout");
@@ -312,14 +311,18 @@ public final class WebServerPlugin extends JavaPlugin {
      * Returns the {@link TemplateEngineFactory} for creating Thymeleaf template engines.
      * <p>
      * Consumer plugins should use this factory to obtain a {@link org.thymeleaf.TemplateEngine}
-     * configured for their plugin by calling {@link TemplateEngineFactory#getEngineFor(PluginBase)}.
+     * configured for their plugin by calling {@link TemplateEngineFactory#getEngineFor(JavaPlugin)}.
      * </p>
      *
      * @return the template engine factory instance
-     * @see TemplateEngineFactory#getEngineFor(PluginBase)
+     * @see TemplateEngineFactory#getEngineFor(JavaPlugin)
      */
     public TemplateEngineFactory getTemplateEngineFactory() {
         return this.templateEngineFactory;
+    }
+
+    public Set<PluginIdentifier> getRegisteredPlugins() {
+        return this.webServer.getRegisteredPlugins();
     }
 
     UUID createServiceAccount(String name, String password) throws IOException {

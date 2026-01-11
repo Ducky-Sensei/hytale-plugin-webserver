@@ -5,9 +5,11 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import net.nitrado.hytale.plugins.webserver.WebServerPlugin;
 import net.nitrado.hytale.plugins.webserver.authentication.store.CredentialValidator;
 import net.nitrado.hytale.plugins.webserver.authentication.store.LoginCodeStore;
 import net.nitrado.hytale.plugins.webserver.authentication.store.UserCredentialStore;
+import net.nitrado.hytale.plugins.webserver.servlets.TemplateServlet;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -16,25 +18,24 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.UUID;
 
-public final class LoginServlet extends HttpServlet {
+public final class LoginServlet extends TemplateServlet {
 
     private final HytaleLogger logger;
     private final CredentialValidator credentialValidator;
     private final UserCredentialStore credentialStore;
-    private final TemplateEngine templateEngine;
     private final LoginCodeStore loginCodeStore;
 
-    public LoginServlet(HytaleLogger logger, UserCredentialStore credentialStore, CredentialValidator validator, LoginCodeStore loginCodeStore, TemplateEngine templateEngine) {
+    public LoginServlet(WebServerPlugin plugin, HytaleLogger logger, UserCredentialStore credentialStore, CredentialValidator validator, LoginCodeStore loginCodeStore) {
+        super(plugin);
+
         this.logger = logger;
         this.credentialStore = credentialStore;
         this.loginCodeStore = loginCodeStore;
         this.credentialValidator = validator;
-
-        this.templateEngine = templateEngine;
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         resp.setContentType("text/html;charset=utf-8");
         var session = req.getSession();
 
@@ -45,18 +46,10 @@ public final class LoginServlet extends HttpServlet {
             m.put("UUID", uuidString.toString());
         }
 
-        JakartaServletWebApplication webApplication =
-                JakartaServletWebApplication.buildApplication(this.getServletContext());
-
-        var exchange = webApplication.buildExchange(req, resp);
-
-        var thymeleafContext = new WebContext(exchange);
-        thymeleafContext.setVariables(m);
-
-        this.templateEngine.process("nitrado.webserver.login", thymeleafContext, resp.getWriter());
+        this.renderTemplate(req, resp, "nitrado.webserver.login", m);
     }
 
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         var session = req.getSession();
 
         var m = new HashMap<String, Object>();
@@ -125,18 +118,11 @@ public final class LoginServlet extends HttpServlet {
             return;
         }
 
-        JakartaServletWebApplication webApplication =
-                JakartaServletWebApplication.buildApplication(this.getServletContext());
-
-        var exchange = webApplication.buildExchange(req, resp);
-
         resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         m.put("CSRF_TOKEN", "abcd");
 
-        var thymeleafContext = new WebContext(exchange);
-        thymeleafContext.setVariables(m);
 
-        this.templateEngine.process("login", thymeleafContext, resp.getWriter());
+        this.renderTemplate(req, resp, "nitrado.webserver.login", m);
     }
 
     private LoginCodeStore.Entry getStoredEntryByLoginCode(String loginCode) {

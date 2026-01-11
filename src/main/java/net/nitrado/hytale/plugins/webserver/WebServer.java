@@ -228,6 +228,10 @@ final class WebServer {
         this.logger.atInfo().log("Removed filters at path: %s", pathSpec);
     }
 
+    Set<PluginIdentifier> getRegisteredPlugins() {
+        return this.pluginToPathSpecs.keySet();
+    }
+
     void start() throws Exception {
         for (var connector : this.server.getConnectors()) {
             if (connector instanceof ServerConnector sc) {
