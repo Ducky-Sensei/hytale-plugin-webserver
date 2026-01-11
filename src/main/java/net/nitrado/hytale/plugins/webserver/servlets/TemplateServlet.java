@@ -72,8 +72,6 @@ public abstract class TemplateServlet extends HttpServlet {
         ) {
             var pluginsByGroups = getPluginsByGroups();
 
-            parentPlugin.getLogger().atWarning().log("%v", pluginsByGroups);
-
             variables.put("pluginsByGroups", pluginsByGroups);
             variables.put("pluginGroups", pluginsByGroups.keySet().stream().sorted().toList());
         }

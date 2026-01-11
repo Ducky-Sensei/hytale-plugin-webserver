@@ -48,6 +48,10 @@ public final class SessionAuthProvider implements AuthProvider {
 
     @Override
     public boolean challenge(HttpServletRequest req, HttpServletResponse res) {
+        if (res.isCommitted()) {
+            return false;
+        }
+
         try {
             res.sendRedirect(res.encodeRedirectURL("/login?redirect_url=" + req.getRequestURI()));
         } catch (IOException e) {
