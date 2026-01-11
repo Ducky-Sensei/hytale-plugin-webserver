@@ -308,6 +308,20 @@ public final class WebServerPlugin extends JavaPlugin {
         getWebServer().removeServlets(plugin);
     }
 
+    /**
+     * Returns the {@link TemplateEngineFactory} for creating Thymeleaf template engines.
+     * <p>
+     * Consumer plugins should use this factory to obtain a {@link org.thymeleaf.TemplateEngine}
+     * configured for their plugin by calling {@link TemplateEngineFactory#getEngineFor(PluginBase)}.
+     * </p>
+     *
+     * @return the template engine factory instance
+     * @see TemplateEngineFactory#getEngineFor(PluginBase)
+     */
+    public TemplateEngineFactory getTemplateEngineFactory() {
+        return this.templateEngineFactory;
+    }
+
     UUID createServiceAccount(String name, String password) throws IOException {
         UUID uuid = UUID.randomUUID();
 

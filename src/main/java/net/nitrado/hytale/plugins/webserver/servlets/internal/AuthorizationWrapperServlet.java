@@ -9,9 +9,16 @@ import net.nitrado.hytale.plugins.webserver.authorization.RequirePermissions;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.Collections;
+import java.util.Set;
 import java.util.UUID;
+import java.util.WeakHashMap;
 
 public final class AuthorizationWrapperServlet extends HttpServlet {
+    private static final Set<HttpServlet> initializedServlets = Collections.synchronizedSet(
+            Collections.newSetFromMap(new WeakHashMap<>())
+    );
+
     private final HttpServlet delegate;
     private final HytaleLogger logger;
 
@@ -20,6 +27,22 @@ public final class AuthorizationWrapperServlet extends HttpServlet {
     public AuthorizationWrapperServlet(HytaleLogger logger, HttpServlet delegate) {
         this.delegate = delegate;
         this.logger = logger;
+    }
+
+    @Override
+    public void init() throws ServletException {
+        super.init();
+        if (initializedServlets.add(delegate)) {
+            delegate.init(getServletConfig());
+        }
+    }
+
+    @Override
+    public void destroy() {
+        if (initializedServlets.remove(delegate)) {
+            delegate.destroy();
+        }
+        super.destroy();
     }
 
     @Override
