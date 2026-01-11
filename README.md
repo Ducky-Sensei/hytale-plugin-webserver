@@ -230,6 +230,15 @@ public class QueryServlet extends HttpServlet {
 }
 ```
 
+### Built-in Permissions
+
+The WebServer plugin provides the following built-in permissions:
+
+| Permission                                   | Description                                                                      |
+|----------------------------------------------|----------------------------------------------------------------------------------|
+| `nitrado.webserver.command.logincode.create` | Allows a player to create a login code via the `/webserver code create` command. |
+| `nitrado.webserver.web.list.plugins`         | Allows viewing the list of installed plugins through the web UI.                 |
+
 ### Authentication
 
 #### Player Password
