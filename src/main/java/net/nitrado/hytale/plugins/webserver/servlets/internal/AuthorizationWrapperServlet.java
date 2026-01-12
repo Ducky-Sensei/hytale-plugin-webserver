@@ -49,10 +49,7 @@ public final class AuthorizationWrapperServlet extends HttpServlet {
     protected void service(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
 
-        this.logger.atInfo().log("Checking permissions...");
-
         RequirePermissions[] rps = findPermissionAnnotations(delegate.getClass(), req.getMethod());
-        this.logger.atInfo().log("rps is %s", String.valueOf(rps));
         if (rps != null && !checkPermissions(req, resp, rps)) {
             return;
         }
@@ -61,7 +58,6 @@ public final class AuthorizationWrapperServlet extends HttpServlet {
     }
 
     private boolean checkPermissions(HttpServletRequest req, HttpServletResponse res, RequirePermissions[] rps) {
-        this.logger.atInfo().log("Permissions: %d", rps.length);
         if (rps.length == 0) {
             return true;
         }
@@ -80,14 +76,12 @@ public final class AuthorizationWrapperServlet extends HttpServlet {
 
         var isAnonymous = isAnonymousUser(holder);
 
-        this.logger.atInfo().log("User is %s", user.getName());
 
         for  (RequirePermissions rp : rps) {
             var isAllowed = rp.mode() == RequirePermissions.Mode.ANY ?
                       checkPermissionsAny(holder, rp.value())
                     : checkPermissionsAll(holder, rp.value());
 
-            this.logger.atInfo().log("Permission mode is %s", rp.mode().toString());
 
             if (!isAllowed) {
                 if (isAnonymous) {
@@ -100,7 +94,6 @@ public final class AuthorizationWrapperServlet extends HttpServlet {
             }
         }
 
-        this.logger.atInfo().log("All permission checks passed");
         return true;
     }
 
@@ -121,11 +114,9 @@ public final class AuthorizationWrapperServlet extends HttpServlet {
 
         for (String permission : permissions) {
             if (holder.hasPermission(permission)) {
-                this.logger.atInfo().log("holder has permission %s", permission);
                 return true;
             }
 
-            this.logger.atInfo().log("holder does not have permission %s", permission);
         }
 
         return false;
