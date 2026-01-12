@@ -230,6 +230,30 @@ public class QueryServlet extends HttpServlet {
 }
 ```
 
+#### Using RequirePermissionsFilter
+
+If you cannot use the `@RequirePermissions` annotation (e.g., when using a third-party servlet, a dynamically
+generated servlet, or when you need to configure permissions at runtime), you can use `RequirePermissionsFilter`
+instead.
+
+The filter is registered alongside your servlet and performs the same permission checks:
+
+```java
+// Require ALL permissions (default behavior)
+webServerPlugin.addServlet(this, "/protected", new ThirdPartyServlet(),
+    new RequirePermissionsFilter("my.plugin.web.read", "my.plugin.web.write"));
+
+// Require ANY of the permissions (pass `true` as first argument)
+webServerPlugin.addServlet(this, "/protected", new ThirdPartyServlet(),
+    new RequirePermissionsFilter(true, "my.plugin.web.read.a", "my.plugin.web.read.b"));
+```
+
+The filter behaves identically to the annotation:
+- Returns `401 Unauthorized` if no user is authenticated (or if the anonymous user lacks permission)
+- Returns `403 Forbidden` if an authenticated user lacks the required permissions
+
+**Note:** When using both the annotation and the filter on the same servlet, both checks must pass.
+
 ### Built-in Permissions
 
 The WebServer plugin provides the following built-in permissions:
