@@ -1,4 +1,4 @@
-# Hytale Plugin WebServer
+# Hytale WebServer Plugin
 
 This is a base plugin for the game Hytale, allowing other Hytale plugins to serve web-based content.
 
