@@ -154,7 +154,7 @@ public final class WebServerPlugin extends JavaPlugin {
         try {
             this.webServer.addServlet(new IndexServlet(
                     this
-            ), "/", new AuthFilter(getDefaultAuthProviders()));
+            ), "", new AuthFilter(getDefaultAuthProviders()));
 
             this.webServer.addServlet(new LoginServlet(
                     this,
